@@ -1,0 +1,291 @@
+// Pacurucu Dental Care — Schema Prisma
+// Nota de portabilidad: provider sqlite en sandbox. Para producción:
+//   datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+//   + prisma migrate deploy. No se usan tipos exclusivos de SQLite ni enums
+//   (SQLite no soporta enums de Prisma; los estados se validan con Zod).
+// Nota de fechas: los campos `date` usan String "YYYY-MM-DD" y las horas
+//   "HH:MM" para evitar ambigüedad de zonas horarias en el calendario.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// USUARIO ADMIN (odontólogo). Fuente de verdad para NextAuth Credentials.
+// ─────────────────────────────────────────────────────────────────────────
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  role         String   @default("ADMIN") // v1: un solo rol. Validado con Zod.
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SERVICIOS (regla Cero Hardcoding: el sitio público los lee de aquí)
+// ─────────────────────────────────────────────────────────────────────────
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  duration    Int // minutos
+  price       Float // USD (Ecuador usa dólar)
+  category    String // categoría libre, editable desde el panel
+  imageUrl    String? // opcional; sin imagen → placeholder con inicial
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0) // orden drag-and-drop del panel
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  appointmentServices AppointmentService[]
+
+  @@index([active, sortOrder])
+  @@index([category])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CALENDARIO: horarios semanales + bloqueos de fechas
+// ─────────────────────────────────────────────────────────────────────────
+model Schedule {
+  id        String  @id @default(cuid())
+  dayOfWeek Int // 0 = domingo … 6 = sábado
+  startTime String // "09:00"
+  endTime   String // "17:00"
+  isActive  Boolean @default(true)
+
+  @@unique([dayOfWeek]) // v1: un turno por día. Umbral multi-turno: docs/05.
+}
+
+model DateBlock {
+  id        String   @id @default(cuid())
+  date      String // "YYYY-MM-DD" (vacaciones, feriados)
+  reason    String   @default("Bloqueado")
+  createdAt DateTime @default(now())
+
+  @@unique([date])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PACIENTES
+// ─────────────────────────────────────────────────────────────────────────
+model Patient {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique // find-or-create en el flujo de reserva
+  phone     String
+  birthDate String? // "YYYY-MM-DD" opcional
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointments  Appointment[]
+  clinicalNotes ClinicalNote[]
+  invoices      Invoice[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CITAS
+// Estados (String + validación Zod en src/lib/validators.ts):
+//   PENDING | CONFIRMED | COMPLETED | CANCELLED | NO_SHOW
+// Origen: PUBLIC_FORM | ADMIN
+// ─────────────────────────────────────────────────────────────────────────
+model Appointment {
+  id           String   @id @default(cuid())
+  patientId    String
+  date         String // "YYYY-MM-DD"
+  startTime    String // "HH:MM"
+  endTime      String // "HH:MM" (calculado al crear: inicio + duración total)
+  status       String   @default("PENDING")
+  source       String   @default("PUBLIC_FORM")
+  notes        String? // notas del paciente en la solicitud
+  adminNotes   String? // notas internas del odontólogo
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  patient            Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  services           AppointmentService[]
+  invoice            Invoice?
+  bookingRequests    BookingRequest[]
+  clinicalNotes      ClinicalNote[]
+
+  @@index([date, status])
+  @@index([patientId])
+  @@index([status, date])
+}
+
+// Snapshot de servicios por cita: si el precio de un servicio cambia después,
+// la cita y la factura conservan los valores históricos.
+model AppointmentService {
+  id            String   @id @default(cuid())
+  appointmentId String
+  serviceId     String?
+  name          String // snapshot
+  price         Float // snapshot USD
+  duration      Int // snapshot minutos
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service     Service?    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([appointmentId])
+}
+
+// Registro de la solicitud pública (auditoría del flujo de reserva v1)
+model BookingRequest {
+  id            String   @id @default(cuid())
+  appointmentId String
+  requestedAt   DateTime @default(now())
+  channel       String   @default("PUBLIC_FORM")
+  doctorNotified String  @default("PENDING") // PENDING | SENT | SIMULATED | FAILED
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([doctorNotified])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// HISTORIAL CLÍNICO
+// ─────────────────────────────────────────────────────────────────────────
+model ClinicalNote {
+  id            String   @id @default(cuid())
+  patientId     String
+  appointmentId String? // opcional: puede haber consulta sin cita
+  date          String // "YYYY-MM-DD"
+  treatment     String
+  observations  String?
+  privateNotes  String? // notas privadas del odontólogo
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([patientId, date])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// FACTURACIÓN INTERNA
+// Numeración secuencial: FAC-0001, FAC-0002…
+// ─────────────────────────────────────────────────────────────────────────
+model Invoice {
+  id            String   @id @default(cuid())
+  number        Int      @unique // secuencial
+  appointmentId String?  @unique // una factura por cita (nullable: factura manual futura)
+  patientId     String
+  date          String // "YYYY-MM-DD"
+  itemsJson     String // JSON: [{ name, price, quantity }]
+  subtotal      Float
+  total         Float
+  paymentMethod String   @default("EFECTIVO")
+  status        String   @default("ISSUED") // ISSUED | void (futuro)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([patientId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CONFIGURACIÓN (regla Cero Hardcoding)
+// ClinicSetting: clave → valor JSON (clinic, doctor, hero, about, theme…)
+// ─────────────────────────────────────────────────────────────────────────
+model ClinicSetting {
+  key       String   @id
+  value     String // JSON serializado
+  updatedAt DateTime @updatedAt
+}
+
+model FeatureFlag {
+  key         String  @id // "WHATSAPP_ENABLED" | "STRIPE_ENABLED"
+  enabled     Boolean
+  description String
+  updatedAt   DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// CONTENIDO EDITABLE DEL SITIO
+// ─────────────────────────────────────────────────────────────────────────
+model Testimonial {
+  id          String  @id @default(cuid())
+  patientName String
+  rating      Int // 1–5
+  text        String
+  published   Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  @@index([published, sortOrder])
+}
+
+model FaqItem {
+  id       String @id @default(cuid())
+  question String
+  answer   String
+  sortOrder Int   @default(0)
+
+  @@index([sortOrder])
+}
+
+model GalleryItem {
+  id       String  @id @default(cuid())
+  title    String
+  imageUrl String
+  sortOrder Int    @default(0)
+
+  @@index([sortOrder])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([read, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// AUDITORÍA DE NOTIFICACIONES (tolerancia a fallos)
+// type: WHATSAPP_DOCTOR | WHATSAPP_PATIENT | EMAIL_HISTORY
+// status: SENT | SIMULATED | FAILED | QUEUED
+// ─────────────────────────────────────────────────────────────────────────
+model NotificationLog {
+  id        String   @id @default(cuid())
+  type      String
+  status    String
+  toAddress String
+  payload   String // JSON: resumen del mensaje
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([type, status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// MEDIOS (fotos subidas desde el PC del odontólogo)
+// Se guardan en la DB como base64 (SQLite no soporta Bytes) y se sirven
+// públicamente vía GET /api/media/<id>. Portable: funciona igual en el
+// sandbox, en Vercel y al migrar a Postgres. Cada foto nueva es un id nuevo,
+// por lo que el cacheo público es inmutable.
+// Umbral de escalabilidad documentado en docs/05-scaling-thresholds.md.
+// ─────────────────────────────────────────────────────────────────────────
+model MediaAsset {
+  id        String   @id @default(cuid())
+  mimeType  String // image/png | image/jpeg | image/webp | image/gif
+  size      Int // bytes (≤ 5 MB validado en la API)
+  data      String // base64
+  createdAt DateTime @default(now())
+}
+

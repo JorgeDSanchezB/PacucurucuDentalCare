@@ -1,0 +1,333 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-terracotta: var(--terracotta);
+}
+
+/*
+ * Paleta Pacurucu Dental Care (ver docs/design-brief.md).
+ * Valores hex → oklch aproximados del tema.
+ * Fondo crema #FAF8F5 · Navy #1A1A2E · Turquesa #0A7B83 · Terracota #E8B4A0.
+ * Decisión documentada: modo claro como modo de marca (referencias boutique).
+ */
+:root {
+  --radius: 0.875rem;
+  --background: #faf8f5;
+  --foreground: #1a1a2e;
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a2e;
+  --primary: #0a7b83;
+  --primary-foreground: #ffffff;
+  --secondary: #f6eae4;
+  --secondary-foreground: #7a3e2a;
+  --muted: #f0ede8;
+  --muted-foreground: #5c5a66;
+  --accent: #e8b4a0;
+  --accent-foreground: #1a1a2e;
+  --destructive: #b3261e;
+  --border: #e7e1d7;
+  --input: #e7e1d7;
+  --ring: #0a7b83;
+  --chart-1: #0a7b83;
+  --chart-2: #e8b4a0;
+  --chart-3: #1a1a2e;
+  --chart-4: #c25e3c;
+  --chart-5: #b8d8cd;
+  --sidebar: #1a1a2e;
+  --sidebar-foreground: #e9e5de;
+  --sidebar-primary: #0a7b83;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #262643;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2c2c50;
+  --sidebar-ring: #0a7b83;
+  --terracotta: #c25e3c;
+}
+
+.dark {
+  --background: #14141f;
+  --foreground: #e9e5de;
+  --card: #1b1b2c;
+  --card-foreground: #e9e5de;
+  --popover: #1b1b2c;
+  --popover-foreground: #e9e5de;
+  --primary: #35a3ab;
+  --primary-foreground: #ffffff;
+  --secondary: #262643;
+  --secondary-foreground: #e9e5de;
+  --muted: #22223a;
+  --muted-foreground: #a5a2ae;
+  --accent: #3a2a33;
+  --accent-foreground: #e9e5de;
+  --destructive: #e57368;
+  --border: #2c2c50;
+  --input: #2c2c50;
+  --ring: #35a3ab;
+  --chart-1: #35a3ab;
+  --chart-2: #e8b4a0;
+  --chart-3: #e9e5de;
+  --chart-4: #c25e3c;
+  --chart-5: #b8d8cd;
+  --sidebar: #101019;
+  --sidebar-foreground: #e9e5de;
+  --sidebar-primary: #35a3ab;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #22223a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #2c2c50;
+  --sidebar-ring: #35a3ab;
+  --terracotta: #d97a56;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01";
+    font-optical-sizing: auto;
+  }
+  ::selection {
+    background: #0a7b83;
+    color: #ffffff;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LENGUAJE VISUAL PACURUCU · capa de firma (Task 21)
+   Motivo: el ARCO (guiño al arco dental) · grano fino · sombras en capas.
+   Todo usa vars del tema (DB-driven), sin hexes duros.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Grano de película: film sutil sobre TODO el sitio (pointer-events none).
+   Opacidad 3% — se percibe como textura de papel, no como ruido. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Sombras en capas (materialidad, no "shadow-lg" de catálogo) */
+:root {
+  --shadow-soft: 0 1px 2px rgb(26 26 46 / 0.04), 0 10px 30px -10px rgb(26 26 46 / 0.1);
+  --shadow-lift: 0 2px 6px rgb(26 26 46 / 0.05), 0 24px 48px -16px rgb(26 26 46 / 0.18);
+}
+.shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+.shadow-lift {
+  box-shadow: var(--shadow-lift);
+}
+
+/* El arco: marco de imagen insignia (hero, doctor, clínica).
+   Radios altos arriba → bóveda; 26px abajo → pie arquitectónico. */
+.arch {
+  border-radius: 230px 230px 26px 26px;
+}
+@media (max-width: 640px) {
+  .arch {
+    border-radius: 118px 118px 18px 18px;
+  }
+}
+
+/* Fraunces a máximo tamaño óptico: contraste de trazo real en display.
+   Se combina con font-semibold (wght se mantiene como propiedad alta). */
+.font-display {
+  font-variation-settings: "opsz" 144;
+}
+
+/* Subrayado animado (nav, enlaces de acción) */
+.link-underline {
+  position: relative;
+}
+.link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 1.5px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.link-underline:hover::after,
+.link-underline:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Marquee de valores del consultorio: lento, pausable, silencioso.
+   Máscara de degradado en ambos bordes: el texto se disuelve antes del
+   borde en vez de cortarse a mitad de palabra (se percibía como un
+   desbordamiento del layout aunque la página no tuviera scroll). */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black max(8%, 3.5rem),
+    black calc(100% - max(8%, 3.5rem)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black max(8%, 3.5rem),
+    black calc(100% - max(8%, 3.5rem)),
+    transparent
+  );
+}
+.marquee-track {
+  width: max-content;
+  animation: marquee 44s linear infinite;
+}
+.marquee:hover .marquee-track,
+.marquee:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+/* Números tabulares para tablas del panel admin */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbar sobrio para listas largas del panel */
+.subtle-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.subtle-scroll::-webkit-scrollbar-thumb {
+  background: #d9d2c7;
+  border-radius: 8px;
+}
+.subtle-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Respeto estricto a usuarios con movimiento reducido (MOTION_INTENSITY 4) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+  /* El marquee no corre: valores estáticos, centrados y COMPLETOS.
+     Sin esto la pista saltaba a translateX(0) congelada y cortada —
+     idéntico a un layout roto. Regla de clase (no `*`) para ganar
+     la cascada de los !important genéricos de arriba. */
+  .marquee-track {
+    animation: none !important;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 0.5rem;
+  }
+  .marquee {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  /* La copia duplicada del bucle solo existe para el desplazamiento:
+     sin animación no tiene sentido y duplicaría la lista visible. */
+  .marquee-clone {
+    display: none;
+  }
+}
+
+/*
+ * Entradas de contenido robustas (frontera de seguridad).
+ * La opacidad 0 vive SOLO dentro del keyframe: si la animación no llega a
+ * ejecutarse (recompilación en caliente, pestaña en segundo plano, etc.),
+ * el elemento conserva su opacidad natural (1) y el contenido es visible.
+ * Reemplaza las entradas initial/animate de framer-motion que dejaban el
+ * panel del flujo de reserva invisible si la animación no se disparaba.
+ */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-panel-in {
+  animation: panel-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-rise-in {
+  animation: rise-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

@@ -1,0 +1,68 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# ── SECRETOS Y DATOS DE PACIENTES — JAMÁS VERSIONAR ────────────────────────
+# El repositorio es público: el .env contiene NEXTAUTH_SECRET y la contraseña
+# del admin, y db/custom.db contiene datos reales de pacientes.
+.env
+.env.local
+.env*.local
+db/*
+!db/.gitkeep
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# dependencies
+node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev.log
+*.log
+
+# build artifacts
+tsconfig.tsbuildinfo
+
+# ── Artefactos del entorno de desarrollo (no forman parte de la web) ───────
+# capturas pegadas por el usuario en el chat
+upload/
+# resultados crudos de herramientas del agente
+tool-results/
+# capturas de verificación (algunas muestran el panel admin)
+download/
+# skills del agente de desarrollo (tooling de la plataforma)
+skills/
+# scripts de build del entorno sandbox
+tests/
+# ejemplos de plantilla de la plataforma (websocket)
+examples/
+# tooling interno de la plataforma
+.zscripts/
+# capturas intermedias de depuración (regenerables)
+scripts/*.png
+# análisis VLM intermedios (regenerables)
+scripts/*.json
