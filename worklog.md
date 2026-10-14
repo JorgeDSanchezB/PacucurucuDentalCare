@@ -282,3 +282,25 @@ Stage Summary:
 - Bloqueo restante (requiere el usuario): crear cuenta Vercel, crear proyecto Neon y pasar (a) connection string de Neon y opcionalmente (b) token de Vercel para que el agente haga el deploy por CLI. Sin Neon, el deploy mostraría la página de mantenimiento (page.tsx degradación diseñada).
 - Plan siguiente (Task 26): al recibir la URL de Neon → cambiar schema.prisma a postgresql, db push, seed (con ADMIN_* reales), commit+push, importar en Vercel o deploy por CLI con token, setear env vars (DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, ADMIN_*), verificación E2E (reserva, login, PDFs) y entrega de la URL final.
 - Nota de seguridad: el token de GitHub sigue vivo en .git/config local y en el chat; recordar al doctor regenerarlo cuando guste.
+
+---
+Task ID: 26
+Agent: main (Super Z)
+Task: Usuario entregó la connection string de Neon y pidió preparar todo (incluidas variables de entorno) para desplegar en Vercel por su cuenta.
+
+Work Log:
+- prisma/schema.prisma → provider postgresql (commit 1bd901c, ya en GitHub junto a scripts/clean-demo-data.mjs y el dev-server saneado).
+- db push contra Neon (endpoint directo, sin pooler) → todas las tablas creadas; prisma client regenerado para PostgreSQL.
+- Seed completo contra Neon: admin (credenciales desde .env), 10 servicios, 7 horarios, 6 settings, flags, 5 testimonios, 7 FAQ, 6 galería.
+- scripts/clean-demo-data.mjs → datos demo eliminados (3 pacientes, 1 mensaje; cascada limpia citas/notas/facturas). Producción arranca vacía de pacientes.
+- .env apunta al endpoint POOLER de Neon con pgbouncer=true, connection_limit=5 y pool_timeout=30 (afinado tras ver timeout del pool con las 8 consultas paralelas de /api/admin/stats).
+- Depuración clave: una DATABASE_URL fantasma (SQLite vieja) exportada en el shell del sandbox reaparecía en cada comando y el next dev la heredaba (explica fallos intermitentes). scripts/dev-server.mjs ahora impone SIEMPRE la URL de .env al proceso hijo.
+- E2E final contra Neon: página SSR con contenido real, 10 servicios vía API, login admin 302 + sesión "Dr. Miguel Pacurucu", /api/admin/stats 200.
+- Confirmado en el código de next-auth 4.24.13: detecta origin desde x-forwarded-host → el login funciona en Vercel aunque cambie el dominio final.
+- NEXTAUTH_SECRET de producción generado (nuevo, distinto del local) y entregado al usuario para el panel de Vercel. La URL de Neon solo vive en .env (nunca en worklog ni en git).
+- Auditoría git: .env nunca versionado; commits automáticos de la plataforma (mensajes UUID) solo tocan worklog.md.
+
+Stage Summary:
+- Neon queda como fuente única de verdad: sandbox y futuro Vercel comparten la misma DB.
+- El usuario despliega importando el repo en Vercel con 6 variables (tabla entregada en el chat): DATABASE_URL (pooler), NEXTAUTH_SECRET (nuevo), NEXTAUTH_URL (predecido: pacucurucudentalcare.vercel.app), ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME.
+- Pendiente (Task 27): tras el primer deploy, verificación E2E en la URL pública (reserva de prueba, login, PDFs, checklist docs/08) y ajuste de NEXTAUTH_URL si el dominio final difiere.
