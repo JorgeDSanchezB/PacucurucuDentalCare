@@ -241,3 +241,22 @@ Work Log:
 
 Stage Summary:
 - El "desbordamiento" reportado no era scroll real sino el corte en seco del marquee: resuelto con fundido en ambos bordes (escritorio 102px, móvil 56px) + modo movimiento-reducido corregido (antes se congelaba cortado; ahora lista estática centrada con los 6 valores una sola vez). Dev server reiniciado por watcher estancado. Auth verificado sano tras el reinicio.
+
+---
+Task ID: 24
+Agent: main (Super Z)
+Task: "respalda el proyecto en mi github" — push a JorgeDSanchezB/PacucurucuDentalCare (repo PÚBLICO) con token proporcionado
+
+Work Log:
+- RIESGO CRÍTICO detectado antes del push: el .git local (commits automáticos con mensajes UUID) ya tenía rastreados .env (NEXTAUTH_SECRET), db/custom.db (PACIENTES REALES) y upload/. El repo de destino es público → push directo = fuga de datos de pacientes y credenciales.
+- DECISIÓN: historial git limpio desde cero (rm -rf .git + init). Un solo commit con solo archivos seguros.
+- DESINFECCIÓN de credenciales hardcodeadas (la contraseña aparecía en 5 sitios): README.md (tabla de accesos → ahora apunta a .env), prisma/seed.ts (fallbacks eliminados: exige ADMIN_EMAIL/ADMIN_PASSWORD del entorno con error explícito), scripts/e2e-delete-task20.ts y scripts/verify-auth-postrestart.mjs (creds desde process.env/.env con helper loadEnv), worklog.md (mención Task 23 reescrita sin credenciales).
+- .env LOCAL ampliado con ADMIN_EMAIL/ADMIN_PASSWORD/ADMIN_NAME (real) para que seed y scripts sigan funcionando — .env queda fuera del repo. Verificado: login 200 + sesión 200 + API admin 200 con el script desinfectado.
+- .gitignore reescrito (lección: los comentarios INLINE rompen los patrones en .gitignore; y los archivos YA rastreados en el índice jamás se ignoran — git check-ignore --no-index fue la clave del diagnóstico). Excluye: .env, db/* (con !db/.gitkeep), upload/, download/ (capturas del panel con datos), skills/, examples/, tests/, tool-results/, .zscripts/, dev.log, tsbuildinfo, scripts/*.{png,json}.
+- Nuevos archivos: .env.example (placeholders + instrucciones, ruta SQLite relativa a schema), db/.gitkeep.
+- AUDITORÍA DE SEGURIDAD pre-push (git grep --cached): 0 coincidencias de la contraseña real, del token ghp_, del secreto NEXTAUTH_SESSION real; el nombre de variable NEXTAUTH_SECRET solo aparece como referencia (docs, auth.ts, .env.example). 169 archivos: src 123, scripts 17, docs 8, public 3, prisma 2 + raíz (README, .env.example, .gitignore, Caddyfile, bun.lock, configs, worklog).
+- PUSH exitoso a main (8fb50ba). Verificación vía API: 169 archivos en GitHub, 0 sensibles. Remote configurado con el token embebido en .git/config (local, no se versiona) para futuros pushes.
+- Salud tras el backup: web 200, autenticación sana, working tree limpio.
+
+Stage Summary:
+- Proyecto respaldado en https://github.com/JorgeDSanchezB/PacucurucuDentalCare (main, 169 archivos) SIN secretos ni datos de pacientes: se desinfectaron 5 archivos, se saneó el historial, y .env + DB quedan solo en el servidor. El doctor debe saber: (1) el token de GitHub quedó en el chat y en .git/config local — puede regenerarlo en github.com/settings/tokens si le preocupa; (2) el repo es público, puede volverlo privado en Settings; (3) la base de datos de pacientes NO está en GitHub (correcto por privacidad) — si quiere respaldarla, hacer aparte y de forma segura; (4) futuros respaldos: pedir "respalda otra vez" → git add + commit + push.
