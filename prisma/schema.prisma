@@ -1,8 +1,7 @@
 // Pacurucu Dental Care — Schema Prisma
-// Nota de portabilidad: provider sqlite en sandbox. Para producción:
-//   datasource db { provider = "postgresql" url = env("DATABASE_URL") }
-//   + prisma migrate deploy. No se usan tipos exclusivos de SQLite ni enums
-//   (SQLite no soporta enums de Prisma; los estados se validan con Zod).
+// Producción (Vercel): PostgreSQL en Neon vía DATABASE_URL (endpoint pooler
+//   con pgbouncer=true y connection_limit=1). El entorno local apunta a la
+//   misma DB desde la migración a producción.
 // Nota de fechas: los campos `date` usan String "YYYY-MM-DD" y las horas
 //   "HH:MM" para evitar ambigüedad de zonas horarias en el calendario.
 
@@ -11,7 +10,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
