@@ -304,3 +304,20 @@ Stage Summary:
 - Neon queda como fuente única de verdad: sandbox y futuro Vercel comparten la misma DB.
 - El usuario despliega importando el repo en Vercel con 6 variables (tabla entregada en el chat): DATABASE_URL (pooler), NEXTAUTH_SECRET (nuevo), NEXTAUTH_URL (predecido: pacucurucudentalcare.vercel.app), ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME.
 - Pendiente (Task 27): tras el primer deploy, verificación E2E en la URL pública (reserva de prueba, login, PDFs, checklist docs/08) y ajuste de NEXTAUTH_URL si el dominio final difiere.
+
+---
+Task ID: 27
+Agent: main (Super Z)
+Task: "listo revisa que todo este correcto por favor: https://pacucurucu-dental-care.vercel.app/" — verificación E2E integral del primer deploy en Vercel
+
+Work Log:
+- Home pública: HTTP 200, título SSR correcto, contenido real desde Neon (servicios/testimonios/FAQ incrustados en HTML), server: Vercel. La palabra "mantenimiento" aparece solo en textos de servicios, NO es la página de respaldo.
+- APIs públicas: /api/public/services (10 servicios), availability (16 slots con horario real Lun–Vie), contact (validación Zod), payments/checkout (501 por diseño, Stripe OFF).
+- Auth en Vercel: flujo completo csrf → callback/credentials → session OK ("Dr. Miguel Pacurucu"), redirect al dominio real correcto; /api/admin/stats y /patients 200 con sesión; sin sesión → 401. Scripts: verify-vercel-auth.mjs.
+- E2E de negocio (3 rondas, scripts verify-vercel-booking*.mjs + verify-vercel-full.mjs): reserva pública 201 (snapshot precio/duración), slot bloqueado tras reservar, doble-agenda rechazada 409 ANTES de crear el segundo paciente, cita visible en panel (q=, items[]), confirmación PUT {status} PENDING→CONFIRMED→COMPLETED, factura 201 (n.º secuencial max+1) y PDF válido %PDF (2.1 KB). Errores intermedios fueron del script de prueba (parámetros equivocados: search→q, PATCH→PUT, appointments→items), no de la app.
+- Limpieza tras cada ronda vía Prisma contra Neon: producción queda en 0 pacientes/citas/facturas/mensajes/solicitudes; numeración de facturas intacta (primera real será la #1). Contenido del sitio intacto: 10 servicios, 7 horarios, 6 settings, 5 testimonios, 7 FAQ, 6 galería, 1 usuario admin.
+- Navegador real (agent-browser): consola y page errors 0; 8/8 imágenes cargan (lazy loading correcto tras scroll); vista #/reservar renderiza; móvil 390px sin desbordes (scrollWidth=innerWidth); login admin desde la web pública OK con dashboard (4 KPIs, gráfico 14 días, agenda). Capturas: download/vercel-verificacion-{home,movil,panel}.png. VLM: diseño aprobado en las 3 capturas.
+
+Stage Summary:
+- Deploy de Vercel verificado de extremo a extremo: web pública + panel admin + base de datos Neon, todo funcionando. Producción limpia (sin datos de prueba). URL pública: https://pacucurucu-dental-care.vercel.app/
+- Pendiente solo lo que decide el doctor: dominio propio (ajustar NEXTAUTH_URL si lo compra) y, por seguridad, regenerar credenciales expuestas en el chat (token GitHub, contraseña Neon).
