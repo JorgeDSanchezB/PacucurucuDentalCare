@@ -260,3 +260,25 @@ Work Log:
 
 Stage Summary:
 - Proyecto respaldado en https://github.com/JorgeDSanchezB/PacucurucuDentalCare (main, 169 archivos) SIN secretos ni datos de pacientes: se desinfectaron 5 archivos, se saneó el historial, y .env + DB quedan solo en el servidor. El doctor debe saber: (1) el token de GitHub quedó en el chat y en .git/config local — puede regenerarlo en github.com/settings/tokens si le preocupa; (2) el repo es público, puede volverlo privado en Settings; (3) la base de datos de pacientes NO está en GitHub (correcto por privacidad) — si quiere respaldarla, hacer aparte y de forma segura; (4) futuros respaldos: pedir "respalda otra vez" → git add + commit + push.
+
+---
+Task ID: 25
+Agent: main (Super Z)
+Task: "ahora vamos a desplegar el proyecto en vercel" — preparar y verificar todo lo desplegable desde el sandbox; el deploy directo requiere cuentas del usuario.
+
+Work Log:
+- Confirmado Task 24 (respaldo GitHub) ya completado: repo main con 169+ archivos, sin secretos, remote con token en .git/config.
+- Inventario de entorno: git 2.47.3, NO hay vercel CLI ni token de Vercel, node 24, bun disponible.
+- Revisado package.json, .env, prisma/schema.prisma (nota de portabilidad a postgres ya prevista), next.config.ts (output standalone, remotePatterns de imágenes), src/lib/auth.ts (NextAuth v4 JWT, necesita NEXTAUTH_URL en prod), page.tsx (force-dynamic: DB en request-time, no en build → Vercel compila sin DB), sin middleware.
+- Leído docs/08-deployment.md (guía Vercel+Neon ya escrita) y prisma/seed.ts (contenido completo del sitio: 10 servicios, settings, testimonios, FAQ, galería + demo) → no se necesita migración de datos: basta db push + seed en la DB nueva.
+- Conteo de DB actual: 1 usuario, 10 servicios, 3 pacientes, 5 citas, 5 testimonios, 6 settings, 6 galería, 7 FAQ, 1 nota (contenido = seed; pacientes/citas son demo).
+- Detenido dev server (PIDs 10941/10954/10978) y ejecutado `npm run build`: ÉXITO (Turbopack, 17.9s, 31 rutas, / dinámica, 0 errores).
+- Smoke test del build standalone con env inyectadas (como Vercel): puerto 3001 → HTTP 200 en /, título correcto SSR desde DB, /api/public/services OK (10 servicios), /api/auth/session 200. Sin errores en log.
+- Refuerzos para Vercel: package.json + "postinstall": "prisma generate"; .env.example + NEXTAUTH_URL documentado. Commit 505a8c5 y push a GitHub verificado.
+- Dev server relanzado (pid 14133) y verificado (HTTP 200).
+
+Stage Summary:
+- El proyecto compila en producción y el runtime standalone funciona con DB + NextAuth: Vercel no fallará por build.
+- Bloqueo restante (requiere el usuario): crear cuenta Vercel, crear proyecto Neon y pasar (a) connection string de Neon y opcionalmente (b) token de Vercel para que el agente haga el deploy por CLI. Sin Neon, el deploy mostraría la página de mantenimiento (page.tsx degradación diseñada).
+- Plan siguiente (Task 26): al recibir la URL de Neon → cambiar schema.prisma a postgresql, db push, seed (con ADMIN_* reales), commit+push, importar en Vercel o deploy por CLI con token, setear env vars (DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, ADMIN_*), verificación E2E (reserva, login, PDFs) y entrega de la URL final.
+- Nota de seguridad: el token de GitHub sigue vivo en .git/config local y en el chat; recordar al doctor regenerarlo cuando guste.
